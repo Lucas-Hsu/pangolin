@@ -3,35 +3,52 @@ from PyQt6.QtWidgets import *
 class Row(QWidget):
     def __init__(self, text):
         super().__init__()
+
+        self.wordLabel = QLabel(text)
+        self.editButton = QPushButton("edit")
+        self.deleteButton = QPushButton("delete")
+
+        self.setup()
+
+    def setup(self):
         layout = QHBoxLayout()
         self.setLayout(layout)
 
-        label = QLabel(text)
-        edit = QPushButton("edit")
-        delete = QPushButton("delete")
+        layout.addWidget(self.deleteButton, 0)
+        layout.addWidget(self.editButton, 1)
+        layout.addWidget(self.wordLabel, 5)
 
-        layout.addWidget(delete, 0)
-        layout.addWidget(edit, 1)
-        layout.addWidget(label, 5)
+class WordList(QScrollArea):
+    def __init__(self, words):
+        super().__init__()
+        self.layout = QFormLayout()
+        self.setup(words)
 
-class Dictpage(QWidget):
+    def setup(self, words):
+        for w in words:
+            self.layout.addRow(Row(w))
+        formwidget = QWidget()
+        formwidget.setLayout(self.layout)
+        self.setWidget(formwidget)
+
+class DictPage(QWidget):
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.back = QPushButton("back")
+        self.backButton = QPushButton("back")
+        self.wordInput = QLineEdit()
+        self.wordList = WordList(["foo", "bar"])
+        self.setup()
 
-        layout.addWidget(self.back)
-        layout.addWidget(QLineEdit())
+    def setup(self):
+        layout = QVBoxLayout()
         self.setLayout(layout)
 
-        formlayout = QFormLayout()
-        formlayout.addRow(Row("fooooooooooooooooooooooooooooooooooo"))
-        formlayout.addRow(Row("bar"))
+        top = QHBoxLayout()
+        top.addWidget(self.backButton, 1)
+        top.addWidget(self.wordInput, 5)
+        topw = QWidget()
+        topw.setLayout(top)
 
-        formwidget = QWidget()
-        formwidget.setLayout(formlayout)
+        layout.addWidget(topw)
+        layout.addWidget(self.wordList)
 
-        scrollable = QScrollArea()
-        scrollable.setWidget(formwidget)
-
-        layout.addWidget(scrollable)
