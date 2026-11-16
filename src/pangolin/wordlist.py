@@ -27,16 +27,20 @@ class WordList(QScrollArea):
     def setup(self, words):
         for w in words:
             self.layout.addRow(Row(w))
-        formwidget = QWidget()
-        formwidget.setLayout(self.layout)
-        self.setWidget(formwidget)
+        groupBox = QGroupBox()
+        groupBox.setLayout(self.layout)
+        self.setWidget(groupBox)
+        self.setWidgetResizable(True)
+        self.setFixedHeight(200)
+
 
 class DictPage(QWidget):
     def __init__(self):
         super().__init__()
-        self.backButton = QPushButton("back")
+        self.backButton = QPushButton("<")
         self.wordInput = QLineEdit()
-        self.wordList = WordList(["foo", "bar"])
+        self.addButton = QPushButton("Add Word")
+        self.wordList = WordList(["test" for i in range(5)])
         self.setup()
 
     def setup(self):
@@ -46,9 +50,13 @@ class DictPage(QWidget):
         top = QHBoxLayout()
         top.addWidget(self.backButton, 1)
         top.addWidget(self.wordInput, 5)
+        top.addWidget(self.addButton, 1)
         topw = QWidget()
         topw.setLayout(top)
 
         layout.addWidget(topw)
         layout.addWidget(self.wordList)
+
+    def addWord(self):
+        self.wordList.layout.addRow(Row(self.wordInput.text()))
 
