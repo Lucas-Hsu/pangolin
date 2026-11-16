@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
 
     def generate(self):
         words = [
-            self.dictPage.wordList.layout.itemAt(i).widget().wordLabel.text() 
+            self.dictPage.wordList.layout.itemAt(i).widget().wordLabel.text().strip() 
             for i in range(self.dictPage.wordList.layout.count())
         ]
         numbers = self.mainPage.numbersCheck.isChecked()
@@ -45,6 +45,7 @@ class MainWindow(QMainWindow):
     def copyPassword(self):
         self.clipboard.setText(self.mainPage.passwordLabel.text())
 
+
 def main():
     app = QApplication(sys.argv)
 
@@ -56,6 +57,7 @@ def main():
 
     window.dictPage.backButton.clicked.connect(window.page(0))
     window.dictPage.addButton.clicked.connect(window.dictPage.addWord)
+    window.dictPage.connectRows()
 
     window.show()
     app.exec()

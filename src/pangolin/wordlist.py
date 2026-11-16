@@ -16,7 +16,7 @@ class Row(QWidget):
         layout = QHBoxLayout()
         self.setLayout(layout)
 
-        layout.addWidget(self.deleteButton, 0)
+        layout.addWidget(self.deleteButton, 1)
         layout.addWidget(self.editButton, 1)
         layout.addWidget(self.wordLabel, 5)
 
@@ -35,6 +35,10 @@ class WordList(QScrollArea):
         self.setWidgetResizable(True)
         self.setFixedHeight(WINDOW_H)
 
+    def rebuildList(self, words):
+        self.layout = QFormLayout()
+        self.setup(words)
+
 
 class DictPage(QWidget):
     def __init__(self):
@@ -43,13 +47,13 @@ class DictPage(QWidget):
         self.wordInput = QLineEdit()
         self.addButton = QPushButton("Add Word")
 
-        words = []
+        self.words = []
         try:
             with open(WORDFILE, 'r') as file:
-                words = [line for line in file]
+                self.words = [line for line in file]
         except:
-            sys.exit(f"could not read {WORDFILE}!")
-        self.wordList = WordList(words)
+            print(f"could not find {WORDFILE}, creating.", file = sys.stderr)
+        self.wordList = WordList(self.words)
         self.setup()
 
     def setup(self):
@@ -66,12 +70,47 @@ class DictPage(QWidget):
         layout.addWidget(topw)
         layout.addWidget(self.wordList)
 
-    def addWord(self):
-        word = self.wordInput.text()
-        self.wordList.layout.addRow(Row(word))
+    def writeWords(self):
         try:
-            with open(WORDFILE, 'a') as file:
-                file.write(word)
+            with open(WORDFILE, 'w') as file:
+                for word in self.words:
+                    file.write(word + "\n")
         except:
             sys.exit(f"could not read {WORDFILE}!")
+
+    def connectRows(self):
+        for i in range(self.wordList.layout.count()):
+            self.wordList.layout.itemAt(i).widget().editButton.clicked.connect(self.editWord(i))
+            self.wordList.layout.itemAt(i).widget().deleteButton.clicked.connect(self.deleteWord(i))
+
+    def rebuildList(self):
+        self.wordList.rebuildList(self.words)
+        self.connectRows()
+
+    def addWord(self):
+        word = self.wordInput.text()
+        if not word.strip(): 
+            return
+        self.words.append(word)
+        self.writeWords()
+        self.rebuildList()
+
+    def deleteWord(self, idx):
+        def dw():
+            self.wordList.layout.removeRow(idx)
+            self.words.pop(idx)
+            self.writeWords()
+            self.rebuildList()
+        return dw
+
+    def editWord(self, idx):
+        def cw():
+            word = self.wordInput.text()
+            if not word.strip(): 
+                return
+            self.wordList.layout.itemAt(idx).widget().wordLabel.setText(word)
+            self.words[idx] = word
+            self.writeWords()
+            self.rebuildList()
+        return cw
 
