@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import *
+from pangolin.definitions import *
 
 class MainPage(QWidget):
     def __init__(self):
@@ -6,7 +7,7 @@ class MainPage(QWidget):
         self.capitalCheck = QCheckBox("Capital Letters")
         self.specialCheck = QCheckBox("Special Characters")
         self.numbersCheck = QCheckBox("Numbers")
-        self.lengthSpin = QSpinBox()
+        self.lengthSpin = QSpinBox(minimum = LENGTH_MIN, maximum = LENGTH_MAX, value = LENGTH_DEFAULT)
         self.generateButton = QPushButton("Generate")
         self.wordsButton = QPushButton("Word List")
         self.passwordLabel = QLabel("asdfjkasdf")

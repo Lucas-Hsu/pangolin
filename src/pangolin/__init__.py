@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import *
 from pangolin.wordlist import *
 from pangolin.mainpage import *
+from pangolin.definitions import *
 import sys
 
 class MainWindow(QMainWindow):
@@ -14,7 +15,7 @@ class MainWindow(QMainWindow):
 
     def setup(self):
         self.setWindowTitle("Pangolin")
-        self.setGeometry(0, 0, 400, 200)
+        self.setGeometry(0, 0, WINDOW_W, WINDOW_H)
 
         self.layout.addWidget(self.mainPage)
         self.layout.addWidget(self.dictPage)

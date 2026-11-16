@@ -1,4 +1,6 @@
 from PyQt6.QtWidgets import *
+from pangolin.definitions import *
+import sys
 
 class Row(QWidget):
     def __init__(self, text):
@@ -31,7 +33,7 @@ class WordList(QScrollArea):
         groupBox.setLayout(self.layout)
         self.setWidget(groupBox)
         self.setWidgetResizable(True)
-        self.setFixedHeight(200)
+        self.setFixedHeight(WINDOW_H)
 
 
 class DictPage(QWidget):
@@ -40,7 +42,14 @@ class DictPage(QWidget):
         self.backButton = QPushButton("<")
         self.wordInput = QLineEdit()
         self.addButton = QPushButton("Add Word")
-        self.wordList = WordList(["test" for i in range(5)])
+
+        words = []
+        try:
+            with open(WORDFILE, 'r') as file:
+                words = [line for line in file]
+        except:
+            sys.exit(f"could not read {WORDFILE}!")
+        self.wordList = WordList(words)
         self.setup()
 
     def setup(self):
@@ -58,5 +67,11 @@ class DictPage(QWidget):
         layout.addWidget(self.wordList)
 
     def addWord(self):
-        self.wordList.layout.addRow(Row(self.wordInput.text()))
+        word = self.wordInput.text()
+        self.wordList.layout.addRow(Row(word))
+        try:
+            with open(WORDFILE, 'a') as file:
+                file.write(word)
+        except:
+            sys.exit(f"could not read {WORDFILE}!")
 
