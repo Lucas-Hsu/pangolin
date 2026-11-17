@@ -1,17 +1,25 @@
 [project]
 name = "pangolin"
 version = "0.1.0"
-description = "Add your description here"
+description = "A desktop word-based password generator"
 readme = "README.md"
-requires-python = ">=3.15"
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
 dependencies = [
-    "pathlib>=1.0.1",
-    "pyqt6>=6.12.0",
+    "PyQt6>=6.12.0,<6.13",
 ]
 
 [project.scripts]
 pangolin = "pangolin:main"
 
 [build-system]
-requires = ["uv_build>=0.13.8,<0.14.0"]
+requires = ["uv_build>=0.13,<0.14"]
 build-backend = "uv_build"
+
+[tool.uv]
+no-build-package = ["PyQt6", "PyQt6-Qt6", "PyQt6-sip"]
+
+[tool.uv.build-backend]
+source-include = ["main.py", "Start-Pangolin.command", ".python-version", "examples/**", "tests/**"]
+source-exclude = [".DS_Store", "._*", "__MACOSX"]

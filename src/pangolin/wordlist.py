@@ -1,116 +1,90 @@
-from PyQt6.QtWidgets import *
-from pangolin.definitions import *
-import sys
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import (
+    QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMessageBox,
+    QPushButton, QScrollArea, QVBoxLayout, QWidget,
+)
+
+from .generator import DEFAULT_WORDS
+
 
 class Row(QWidget):
+    removeRequested = pyqtSignal()
+
     def __init__(self, text):
         super().__init__()
-
         self.wordLabel = QLabel(text)
-        self.editButton = QPushButton("edit")
-        self.deleteButton = QPushButton("delete")
+        self.wordLabel.setTextFormat(Qt.TextFormat.PlainText)
+        self.editButton = QPushButton("Edit")
+        self.deleteButton = QPushButton("Delete")
+        layout = QHBoxLayout(self)
+        layout.addWidget(self.deleteButton)
+        layout.addWidget(self.editButton)
+        layout.addWidget(self.wordLabel, 1)
+        self.editButton.clicked.connect(self.editWord)
+        self.deleteButton.clicked.connect(lambda checked=False: self.removeRequested.emit())
 
-        self.setup()
+    def editWord(self):
+        text, accepted = QInputDialog.getText(
+            self, "Edit word", "Word:", text=self.wordLabel.text()
+        )
+        if accepted:
+            text = text.strip()
+            if not text:
+                QMessageBox.warning(self, "Empty word", "Enter a word first.")
+                return
+            self.wordLabel.setText(text)
 
-    def setup(self):
-        layout = QHBoxLayout()
-        self.setLayout(layout)
-
-        layout.addWidget(self.deleteButton, 1)
-        layout.addWidget(self.editButton, 1)
-        layout.addWidget(self.wordLabel, 5)
 
 class WordList(QScrollArea):
     def __init__(self, words):
         super().__init__()
-        self.layout = QFormLayout()
-        self.setup(words)
-
-    def setup(self, words):
-        for w in words:
-            self.layout.addRow(Row(w))
-        groupBox = QGroupBox()
-        groupBox.setLayout(self.layout)
-        self.setWidget(groupBox)
+        container = QWidget()
+        self.rowsLayout = QVBoxLayout(container)
+        self.rowsLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.setWidget(container)
         self.setWidgetResizable(True)
-        self.setFixedHeight(WINDOW_H)
+        self.setMinimumHeight(200)
+        for word in words:
+            self.addWord(word)
 
-    def rebuildList(self, words):
-        self.layout = QFormLayout()
-        self.setup(words)
+    def addWord(self, text):
+        row = Row(text)
+        row.removeRequested.connect(lambda: self.removeWord(row))
+        self.rowsLayout.addWidget(row)
+
+    def removeWord(self, row):
+        self.rowsLayout.removeWidget(row)
+        row.deleteLater()
+
+    def words(self):
+        return [self.rowsLayout.itemAt(i).widget().wordLabel.text()
+                for i in range(self.rowsLayout.count())]
 
 
 class DictPage(QWidget):
     def __init__(self):
         super().__init__()
-        self.backButton = QPushButton("<")
+        self.backButton = QPushButton("Back")
         self.wordInput = QLineEdit()
+        self.wordInput.setPlaceholderText("Add a word")
         self.addButton = QPushButton("Add Word")
-
-        self.words = []
-        try:
-            with open(WORDFILE, 'r') as file:
-                self.words = [line for line in file]
-        except:
-            print(f"could not find {WORDFILE}, creating.", file = sys.stderr)
-        self.wordList = WordList(self.words)
-        self.setup()
-
-    def setup(self):
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
+        self.wordList = WordList(DEFAULT_WORDS)
+        layout = QVBoxLayout(self)
         top = QHBoxLayout()
-        top.addWidget(self.backButton, 1)
-        top.addWidget(self.wordInput, 5)
-        top.addWidget(self.addButton, 1)
-        topw = QWidget()
-        topw.setLayout(top)
-
-        layout.addWidget(topw)
+        top.addWidget(self.backButton)
+        top.addWidget(self.wordInput, 1)
+        top.addWidget(self.addButton)
+        layout.addLayout(top)
         layout.addWidget(self.wordList)
-
-    def writeWords(self):
-        try:
-            with open(WORDFILE, 'w') as file:
-                for word in self.words:
-                    file.write(word + "\n")
-        except:
-            sys.exit(f"could not read {WORDFILE}!")
-
-    def connectRows(self):
-        for i in range(self.wordList.layout.count()):
-            self.wordList.layout.itemAt(i).widget().editButton.clicked.connect(self.editWord(i))
-            self.wordList.layout.itemAt(i).widget().deleteButton.clicked.connect(self.deleteWord(i))
-
-    def rebuildList(self):
-        self.wordList.rebuildList(self.words)
-        self.connectRows()
+        layout.addWidget(QLabel("The word list is kept for this session."))
+        self.addButton.clicked.connect(self.addWord)
+        self.wordInput.returnPressed.connect(self.addWord)
 
     def addWord(self):
-        word = self.wordInput.text()
-        if not word.strip(): 
+        text = self.wordInput.text().strip()
+        if not text:
+            self.wordInput.setFocus()
             return
-        self.words.append(word)
-        self.writeWords()
-        self.rebuildList()
-
-    def deleteWord(self, idx):
-        def dw():
-            self.wordList.layout.removeRow(idx)
-            self.words.pop(idx)
-            self.writeWords()
-            self.rebuildList()
-        return dw
-
-    def editWord(self, idx):
-        def cw():
-            word = self.wordInput.text()
-            if not word.strip(): 
-                return
-            self.wordList.layout.itemAt(idx).widget().wordLabel.setText(word)
-            self.words[idx] = word
-            self.writeWords()
-            self.rebuildList()
-        return cw
-
+        self.wordList.addWord(text)
+        self.wordInput.clear()
+        self.wordInput.setFocus()

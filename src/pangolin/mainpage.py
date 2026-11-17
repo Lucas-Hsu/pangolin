@@ -1,5 +1,9 @@
-from PyQt6.QtWidgets import *
-from pangolin.definitions import *
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (
+    QCheckBox, QGroupBox, QHBoxLayout, QLabel, QPushButton,
+    QSpinBox, QVBoxLayout, QWidget,
+)
+
 
 class MainPage(QWidget):
     def __init__(self):
@@ -7,59 +11,36 @@ class MainPage(QWidget):
         self.capitalCheck = QCheckBox("Capital Letters")
         self.specialCheck = QCheckBox("Special Characters")
         self.numbersCheck = QCheckBox("Numbers")
-        self.lengthSpin = QSpinBox(minimum = LENGTH_MIN, maximum = LENGTH_MAX, value = LENGTH_DEFAULT)
+        for checkbox in (self.capitalCheck, self.specialCheck, self.numbersCheck):
+            checkbox.setChecked(True)
+        self.lengthSpin = QSpinBox()
+        self.lengthSpin.setRange(1, 256)
+        self.lengthSpin.setValue(16)
         self.generateButton = QPushButton("Generate")
         self.wordsButton = QPushButton("Word List")
-        self.passwordLabel = QLabel("asdfjkasdf")
+        self.passwordLabel = QLabel("")
+        self.passwordLabel.setTextFormat(Qt.TextFormat.PlainText)
+        self.passwordLabel.setWordWrap(True)
+        self.passwordLabel.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.copyButton = QPushButton("Copy Password")
-
-
-        self.capital = False;
-        self.numbers = False;
-        self.special = False;
-        self.length = 0;
-
+        self.copyButton.setEnabled(False)
         self.setup()
 
     def setup(self):
-        layout = QHBoxLayout()
-        self.setLayout(layout)
+        layout = QHBoxLayout(self)
+        options = QGroupBox("Password options")
+        controls = QVBoxLayout(options)
+        controls.addWidget(QLabel("Minimum length"))
+        controls.addWidget(self.lengthSpin)
+        controls.addWidget(self.numbersCheck)
+        controls.addWidget(self.capitalCheck)
+        controls.addWidget(self.specialCheck)
+        controls.addWidget(self.generateButton)
+        controls.addWidget(self.wordsButton)
+        layout.addWidget(options)
 
-        col0 = QVBoxLayout()
-        gb0 = QGroupBox()
-        gb0.setLayout(col0)
-        layout.addWidget(gb0)
-
-        col1 = QVBoxLayout()
-        gb1 = QGroupBox()
-        gb1.setLayout(col1)
-        layout.addWidget(gb1)
-
-
-        col0.addWidget(self.lengthSpin)
-        col0.addWidget(self.numbersCheck)
-        col0.addWidget(self.capitalCheck)
-        col0.addWidget(self.specialCheck)
-        col0.addWidget(self.generateButton)
-        col0.addWidget(self.wordsButton)
-
-        col1.addWidget(self.passwordLabel)
-        col1.addWidget(self.copyButton)
-
-        self.capitalCheck.stateChanged.connect(self.capitalChanged)
-        self.numbersCheck.stateChanged.connect(self.numbersChanged)
-        self.specialCheck.stateChanged.connect(self.specialChanged)
-        self.lengthSpin.valueChanged.connect(self.lengthChanged)
-
-
-    def capitalChanged(self):
-        self.capital = self.capitalCheck.isChecked()
-
-    def numbersChanged(self):
-        self.numbers = self.numbersCheck.isChecked()
-
-    def specialChanged(self):
-        self.special = self.specialCheck.isChecked()
-
-    def lengthChanged(self, value):
-        self.length = value
+        output = QGroupBox("Password")
+        result = QVBoxLayout(output)
+        result.addWidget(self.passwordLabel, 1)
+        result.addWidget(self.copyButton)
+        layout.addWidget(output, 1)
