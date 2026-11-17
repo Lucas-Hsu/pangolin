@@ -8,6 +8,14 @@ DEFAULT_WORDS = ("funny", "unicorn", "banana", "house", "kitten")
 DEFAULT_DIGITS = (7, 11, 67, 222, 1010)
 
 
+def digit_bank_from_answers(answers):
+    """Read all three number answers, while recognizing the older 12-answer save."""
+    indices = (3, 4, 5) if len(answers) == 14 else (3,) if len(answers) == 12 else ()
+    numbers = tuple(answers[index] for index in indices
+                    if answers[index].isascii() and answers[index].isdigit())
+    return numbers or DEFAULT_DIGITS
+
+
 def generate(word_bank, digit_bank=DEFAULT_DIGITS, minimumLength=16,
              needUppercase=True, needDigits=True, needSymbols=True):
     """Meet the minimum length and each selected character requirement.
@@ -24,7 +32,7 @@ def generate(word_bank, digit_bank=DEFAULT_DIGITS, minimumLength=16,
     words = tuple(word.strip() for word in word_bank
                   if isinstance(word, str) and word.strip())
     if not words:
-        raise ValueError("Add at least one word to the word list first.")
+        raise ValueError("Complete Set Up before generating a password.")
 
     digits = tuple(str(digit) for digit in digit_bank)
     if needDigits and (not digits or any(

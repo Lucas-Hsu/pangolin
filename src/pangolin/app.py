@@ -1,58 +1,117 @@
-"""Qt application and connections between the existing pages."""
-
+"""Three artwork screens: welcome, questions, and the password generator."""
 import sys
+from pathlib import Path
 
+from PyQt6.QtCore import QEvent, QObject, QStandardPaths
 from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox, QStackedWidget
 
-from .generator import generate
+from .generator import digit_bank_from_answers, generate
 from .mainpage import MainPage
-from .wordlist import DictPage
+from .questions import QuestionsPage
+from .storage import WordBankStore
+from .welcome import WelcomePage
+
+
+class ToolTipFilter(QObject):
+    def eventFilter(self, watched, event):
+        return event.type() == QEvent.Type.ToolTip
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, store=None):
         super().__init__()
-        self.setWindowTitle("Pangolin")
-        self.resize(540, 280)
+        self.setWindowTitle('Pangolin')
+        self.resize(960, 768)
+        self.setMinimumSize(640, 512)
+        self.toolTipFilter = ToolTipFilter(self)
+        QApplication.instance().installEventFilter(self.toolTipFilter)
+        self.store = store if store is not None else WordBankStore(
+            Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation))
+            / 'words.enc'
+        )
+        try:
+            self.words = self.store.load()
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, 'Cannot load saved data', str(exc))
+            self.words = []
+        self.lastCopiedPassword = ''
+        self.welcomePage = WelcomePage()
+        self.questionsPage = QuestionsPage()
         self.mainPage = MainPage()
-        self.dictPage = DictPage()
         self.pages = QStackedWidget()
-        self.pages.addWidget(self.mainPage)
-        self.pages.addWidget(self.dictPage)
+        for page in (self.welcomePage, self.questionsPage, self.mainPage):
+            self.pages.addWidget(page)
         self.setCentralWidget(self.pages)
-
-        self.mainPage.wordsButton.clicked.connect(self.page(1))
-        self.mainPage.generateButton.clicked.connect(self.generate)
+        self.welcomePage.setupButton.clicked.connect(self.showQuestions)
+        self.questionsPage.sheet.answersSubmitted.connect(self.saveAnswers)
+        self.mainPage.generateButton.generationRequested.connect(self.generatePassword)
         self.mainPage.copyButton.clicked.connect(self.copyPassword)
-        self.dictPage.backButton.clicked.connect(self.page(0))
+        self.mainPage.clearButton.clicked.connect(self.clearData)
+        if self.words:
+            self.showMain()
+        else:
+            self.pages.setCurrentWidget(self.welcomePage)
 
-    def page(self, index):
-        def switch():
-            self.pages.setCurrentIndex(index)
-        return switch
+    def showQuestions(self):
+        self.pages.setCurrentWidget(self.questionsPage)
+        self.questionsPage.sheet.fields[0].setFocus()
 
-    def generate(self):
+    def saveAnswers(self, answers):
+        try:
+            self.store.save(answers)
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, 'Cannot save data', str(exc))
+            return
+        self.words = list(answers)
+        self.questionsPage.reset()
+        self.showMain()
+
+    def showMain(self):
+        self.pages.setCurrentWidget(self.mainPage)
+
+    def generatePassword(self):
+        numbers = digit_bank_from_answers(self.words)
         try:
             password = generate(
-                self.dictPage.wordList.words(),
+                self.words, numbers,
                 minimumLength=self.mainPage.lengthSpin.value(),
                 needUppercase=self.mainPage.capitalCheck.isChecked(),
                 needDigits=self.mainPage.numbersCheck.isChecked(),
                 needSymbols=self.mainPage.specialCheck.isChecked(),
             )
         except ValueError as exc:
-            QMessageBox.warning(self, "Cannot generate password", str(exc))
+            QMessageBox.warning(self, 'Cannot generate password', str(exc))
             return
-        self.mainPage.passwordLabel.setText(password)
-        self.mainPage.copyButton.setEnabled(True)
+        self.mainPage.setPassword(password)
 
     def copyPassword(self):
-        QApplication.clipboard().setText(self.mainPage.passwordLabel.text())
+        password = self.mainPage.copyButton.password
+        if not password:
+            return
+        clipboard = QApplication.clipboard()
+        clipboard.setText(password)
+        if clipboard.text() == password:
+            self.lastCopiedPassword = password
+            self.mainPage.copyButton.flashCopied()
+
+    def clearData(self):
+        try:
+            self.store.clear()
+        except OSError as exc:
+            QMessageBox.warning(self, 'Cannot clear data', str(exc))
+            return
+        if self.lastCopiedPassword and QApplication.clipboard().text() == self.lastCopiedPassword:
+            QApplication.clipboard().clear()
+        self.lastCopiedPassword = ''
+        self.words = []
+        self.questionsPage.reset()
+        self.mainPage.reset()
+        self.pages.setCurrentWidget(self.welcomePage)
 
 
 def main():
     app = QApplication(sys.argv)
-    app.setApplicationName("Pangolin")
+    app.setApplicationName('Pangolin')
     window = MainWindow()
     window.show()
     return app.exec()

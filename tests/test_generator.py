@@ -1,10 +1,18 @@
 import itertools
 import unittest
 
-from pangolin.generator import SYMBOLS, generate
+from pangolin.generator import DEFAULT_DIGITS, SYMBOLS, digit_bank_from_answers, generate
 
 
 class GeneratorTests(unittest.TestCase):
+    def test_digit_bank_reads_new_and_legacy_answer_orders(self):
+        answers = ['violet', 'pangolin', 'Mochi', '67', '007', '2026',
+                   'noodles', 'waltz', 'song', 'tea', 'painting', 'curious', 'explore', 'moon']
+        self.assertEqual(digit_bank_from_answers(answers), ('67', '007', '2026'))
+        legacy = answers[:4] + answers[6:]
+        self.assertEqual(digit_bank_from_answers(legacy), ('67',))
+        self.assertEqual(digit_bank_from_answers(['violet']), DEFAULT_DIGITS)
+
     def test_requested_length_and_character_classes(self):
         for upper, digits, symbols in itertools.product((False, True), repeat=3):
             for length in (1, 8, 16, 64, 256):

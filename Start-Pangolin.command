@@ -4,7 +4,7 @@ cd -- "$(dirname -- "$0")"
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 if command -v uv >/dev/null 2>&1; then
-  exec uv run --no-build-package PyQt6 --no-build-package PyQt6-Qt6 --no-build-package PyQt6-sip pangolin
+  exec uv run --no-build-package PyQt6 --no-build-package PyQt6-Qt6 --no-build-package PyQt6-sip --no-build-package cryptography pangolin
 fi
 
 if [ ! -x .venv/bin/python ]; then
@@ -29,10 +29,10 @@ if ! .venv/bin/python -c 'import sys; sys.exit(sys.version_info < (3, 10))'; the
 fi
 
 # Local dependencies allow subsequent launches to work without a download.
-if ! .venv/bin/python -c 'import pangolin, PyQt6.QtWidgets' >/dev/null 2>&1; then
+if ! .venv/bin/python -c 'import pangolin, PyQt6.QtWidgets, cryptography.fernet' >/dev/null 2>&1; then
   if ! .venv/bin/python -m pip --version >/dev/null 2>&1; then
     .venv/bin/python -m ensurepip --upgrade
   fi
-  .venv/bin/python -m pip install --only-binary=PyQt6,PyQt6-Qt6,PyQt6-sip -e .
+  .venv/bin/python -m pip install --only-binary=PyQt6,PyQt6-Qt6,PyQt6-sip,cryptography -e .
 fi
 exec .venv/bin/python main.py
